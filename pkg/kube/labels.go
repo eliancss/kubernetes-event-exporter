@@ -20,6 +20,8 @@ type LabelCache struct {
 	sync.RWMutex
 }
 
+var emptyMap = make(map[string]string)
+
 func NewLabelCache(kubeconfig *rest.Config) *LabelCache {
 	cache, err := lru.NewARC(1024)
 	if err != nil {
@@ -33,6 +35,7 @@ func NewLabelCache(kubeconfig *rest.Config) *LabelCache {
 }
 
 func (l *LabelCache) GetLabelsWithCache(reference *v1.ObjectReference) (map[string]string, error) {
+	return emptyMap,nil
 	uid := reference.UID
 
 	if val, ok := l.cache.Get(uid); ok {
