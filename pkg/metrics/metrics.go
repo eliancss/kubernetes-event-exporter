@@ -7,6 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+        "github.com/rs/zerolog/log"
 )
 
 
@@ -32,7 +33,10 @@ func Init(addr string) {
 	))
 
 	// start up the http listener to expose the metrics
-	go http.ListenAndServe(addr, nil)
+	go func() {
+		err := http.ListenAndServe(addr, nil)
+                log.Error().Err(err).Msg("metrics listen error")
+	}()
 }
 
 func NewMetricsStore(name_prefix string) *Store {
