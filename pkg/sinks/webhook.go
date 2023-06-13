@@ -18,6 +18,8 @@ type WebhookConfig struct {
 	TLS      TLS                    `yaml:"tls"`
 	Layout   map[string]interface{} `yaml:"layout"`
 	Headers  map[string]string      `yaml:"headers"`
+	MaxIdleConnsPerHost int         `yaml:"maxIdleConnsPerHost"`
+	MaxIdleConns int                `yaml:"maxIdleConns"`
 }
 
 func NewWebhook(cfg *WebhookConfig) (Sink, error) {
@@ -26,6 +28,8 @@ func NewWebhook(cfg *WebhookConfig) (Sink, error) {
 		return nil, fmt.Errorf("failed to setup TLS: %w", err)
 	}
 	return &Webhook{cfg: cfg, transport: &http.Transport{
+		MaxIdleConnsPerHost: cfg.MaxIdleConnsPerHost,
+		MaxIdleConns: cfg.MaxIdleConns,
 		Proxy:           http.ProxyFromEnvironment,
 		TLSClientConfig: tlsClientConfig,
 	}}, nil
