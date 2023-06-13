@@ -25,7 +25,7 @@ func NewEngine(config *Config, registry ReceiverRegistry) *Engine {
 			Str("type", reflect.TypeOf(sink).String()).
 			Msg("Registering sink")
 
-		registry.Register(v.Name, sink)
+		registry.Register(v.Name, sink, v.MaxWorkers)
 	}
 
 	return &Engine{

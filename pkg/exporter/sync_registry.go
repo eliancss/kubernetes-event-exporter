@@ -20,7 +20,7 @@ func (s *SyncRegistry) SendEvent(name string, event *kube.EnhancedEvent) {
 	}
 }
 
-func (s *SyncRegistry) Register(name string, sink sinks.Sink) {
+func (s *SyncRegistry) Register(name string, sink sinks.Sink, workers int) {
 	if s.reg == nil {
 		s.reg = make(map[string]sinks.Sink)
 	}

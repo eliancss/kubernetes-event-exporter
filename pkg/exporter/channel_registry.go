@@ -33,7 +33,7 @@ func (r *ChannelBasedReceiverRegistry) SendEvent(name string, event *kube.Enhanc
 	}()
 }
 
-func (r *ChannelBasedReceiverRegistry) Register(name string, receiver sinks.Sink) {
+func (r *ChannelBasedReceiverRegistry) Register(name string, receiver sinks.Sink, workers int) {
 	if r.ch == nil {
 		r.ch = make(map[string]chan kube.EnhancedEvent)
 		r.exitCh = make(map[string]chan interface{})
@@ -48,28 +48,33 @@ func (r *ChannelBasedReceiverRegistry) Register(name string, receiver sinks.Sink
 	if r.wg == nil {
 		r.wg = &sync.WaitGroup{}
 	}
-	r.wg.Add(1)
-
-	go func() {
-	Loop:
-		for {
-			select {
-			case ev := <-ch:
-				log.Debug().Str("sink", name).Str("event", ev.Message).Msg("sending event to sink")
-				err := receiver.Send(context.Background(), &ev)
-				if err != nil {
-					r.MetricsStore.SendErrors.Inc()
-					log.Debug().Err(err).Str("sink", name).Str("event", ev.Message).Msg("Cannot send event")
+	// default to 1 worker
+	if workers == 0 {
+		workers = 1
+	}
+	for i := 0; i < workers; i++ {
+		r.wg.Add(1)
+		go func() {
+		Loop:
+			for {
+				select {
+				case ev := <-ch:
+					log.Debug().Str("sink", name).Str("event", ev.Message).Msg("sending event to sink")
+					err := receiver.Send(context.Background(), &ev)
+					if err != nil {
+						r.MetricsStore.SendErrors.Inc()
+						log.Debug().Err(err).Str("sink", name).Str("event", ev.Message).Msg("Cannot send event")
+					}
+				case <-exitCh:
+					log.Info().Str("sink", name).Msg("Closing the sink")
+					break Loop
 				}
-			case <-exitCh:
-				log.Info().Str("sink", name).Msg("Closing the sink")
-				break Loop
 			}
-		}
-		receiver.Close()
-		log.Info().Str("sink", name).Msg("Closed")
-		r.wg.Done()
-	}()
+			receiver.Close()
+			log.Info().Str("sink", name).Msg("Closed")
+			r.wg.Done()
+		}()
+	}
 }
 
 // Close signals closing to all sinks and waits for them to complete.
